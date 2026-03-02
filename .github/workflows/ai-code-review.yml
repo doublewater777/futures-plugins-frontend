@@ -1,0 +1,84 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches: [main]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get diff
+        id: diff
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "diff=$(git diff --name-only HEAD~1 HEAD)" >> $GITHUB_OUTPUT
+          else
+            echo "diff=$(git diff --name-only HEAD~1 HEAD)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get changed files content
+        id: files
+        run: |
+          files=""
+          for file in $(git diff --name-only HEAD~1 HEAD 2>/dev/null); do
+            if [ -f "$file" ]; then
+              content=$(cat "$file" 2>/dev/null | head -200)
+              files="${files}\n\n=== ${file} ===\n${content}"
+            fi
+          done
+          echo "content=${files}" >> $GITHUB_OUTPUT
+
+      - name: AI Code Review
+        id: review
+        run: |
+          # 安装 jq
+          apt-get update && apt-get install -y jq
+
+          # 调用 Gemini API
+          RESPONSE=$(curl -s -X POST \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${{ secrets.GEMINI_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "contents": [{
+                "parts": [{
+                  "text": "你是一个专业的代码评审专家。请对以下代码变更进行评审，遵循以下要求：\n\n1. 用中文评论\n2. 只关注以下方面：\n   - 代码 bug 和潜在问题\n   - 性能问题\n   - 安全风险\n   - 代码规范问题\n3. 如果没有问题，回复 \"✅ 代码审查通过，没有发现需要修改的问题。\"\n4. 保持简洁，每条问题不超过两句话\n5. 不要使用列表格式，直接用段落形式\n\n代码变更：\n${{ steps.files.outputs.content }}"
+                }]
+              }],
+              "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 2048
+              }
+            }')
+
+          # 提取响应内容
+          REVIEW_RESULT=$(echo $RESPONSE | jq -r '.candidates[0].content.parts[0].text // "API 调用失败"' 2>/dev/null)
+
+          # 打印结果
+          echo "$REVIEW_RESULT" > review_result.txt
+          echo "result=$REVIEW_RESULT" >> $GITHUB_OUTPUT
+
+      - name: Post review comment
+        if: github.event_name == 'pull_request'
+        run: |
+          # 检查是否是 PR 事件
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
+            # 移除可能破坏 JSON 的内容
+            COMMENT_BODY=$(cat review_result.txt | jq -Rs .)
+
+            # 发送到 PR
+            curl -s -X POST \
+              "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"body\": $COMMENT_BODY}"
+          fi
