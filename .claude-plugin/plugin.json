@@ -1,0 +1,8 @@
+{
+  "name": "futures-dev",
+  "description": "期货团队开发技能包，包含埋点上报(weblog-sdk)、前端监控(monitor-sdk)、开发方案模板(dev-plan)",
+  "author": {
+    "name": "期货团队",
+    "email": ""
+  }
+}
