@@ -17,26 +17,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get diff
-        id: diff
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "diff=$(git diff --name-only HEAD~1 HEAD)" >> $GITHUB_OUTPUT
-          else
-            echo "diff=$(git diff --name-only HEAD~1 HEAD)" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Get changed files content
+      - name: Get changed SKILL files
         id: files
         run: |
-          files=""
-          for file in $(git diff --name-only HEAD~1 HEAD 2>/dev/null); do
+          # 获取所有变更的 SKILL.md 文件
+          SKILL_FILES=""
+          for file in $(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep "SKILL.md" || true); do
             if [ -f "$file" ]; then
-              content=$(cat "$file" 2>/dev/null | head -200)
-              files="${files}\n\n=== ${file} ===\n${content}"
+              content=$(cat "$file" 2>/dev/null)
+              SKILL_FILES="${SKILL_FILES}\n\n=== ${file} ===\n${content}"
             fi
           done
-          echo "content=${files}" >> $GITHUB_OUTPUT
+          echo "skill_files=${SKILL_FILES}" >> $GITHUB_OUTPUT
+
+          # 获取所有 skills 的结构信息
+          SKILLS_STRUCTURE=""
+          for dir in skills/*/; do
+            if [ -d "$dir" ]; then
+              skill_name=$(basename "$dir")
+              files=$(find "$dir" -type f | sort)
+              SKILLS_STRUCTURE="${SKILLS_STRUCTURE}\n\n=== ${skill_name} ===\n${files}"
+            fi
+          done
+          echo "skills_structure=${SKILLS_STRUCTURE}" >> $GITHUB_OUTPUT
 
       - name: AI Code Review
         id: review
@@ -44,14 +47,14 @@ jobs:
           # 安装 jq
           apt-get update && apt-get install -y jq
 
-          # 调用 Gemini API
+          # 调用 Gemini API (使用 gemini-2.5-pro)
           RESPONSE=$(curl -s -X POST \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${{ secrets.GEMINI_API_KEY }}" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${{ secrets.GEMINI_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
               "contents": [{
                 "parts": [{
-                  "text": "你是一个专业的代码评审专家。请对以下代码变更进行评审，遵循以下要求：\n\n1. 用中文评论\n2. 只关注以下方面：\n   - 代码 bug 和潜在问题\n   - 性能问题\n   - 安全风险\n   - 代码规范问题\n3. 如果没有问题，回复 \"✅ 代码审查通过，没有发现需要修改的问题。\"\n4. 保持简洁，每条问题不超过两句话\n5. 不要使用列表格式，直接用段落形式\n\n代码变更：\n${{ steps.files.outputs.content }}"
+                  "text": "你是一个 Claude Code Plugin/Skill 专家。你的任务是评审用户提交的 SKILL.md 文件是否符合 Claude Code 的最佳实践。\n\n## Claude Code Skill 官方规范：\n\n### 1. YAML Frontmatter（必需）\n```yaml\n---\nname: skill-name\ndescription: 技能描述。当xxx时触发，包含xxx功能。\n---\n```\n- name: 技能名称（短横线分隔）\n- description: 详细描述触发场景（这是触发的主要依据，要写具体）\n\n### 2. 渐进式披露原则\n- SKILL.md 只保留核心指南（<500行）\n- 详细内容放到 references/ 或 assets/\n- 避免在 SKILL.md 中放冗长的参数表格\n\n### 3. Bundled Resources 结构\n```\nskill-name/\n├── SKILL.md (必需)\n├── scripts/ (可选)\n├── references/ (可选)\n└── assets/ (可选)\n```\n- references/: 详细文档、API 表格、示例\n- assets/: 模板文件、可复制的资源\n- scripts/: 可执行脚本\n\n### 4. 触发场景\ndescription 中应包含具体触发场景，例如：\n- \"当用户说xxx时触发\"\n- \"当用户需要xxx时触发\"\n\n## 评审要求：\n1. 检查 YAML frontmatter 是否完整\n2. 检查是否符合渐进式披露原则\n3. 检查目录结构是否正确\n4. 检查 description 触发场景是否清晰\n5. 检查是否有冗余内容应该拆分到 references/\n\n如果没有问题，回复 \"✅ SKILL 审查通过，符合 Claude Code 规范。\"\n如果有问题，列出具体问题和改进建议。\n\n## 变更的 SKILL.md 文件：\n${{ steps.files.outputs.skill_files }}\n\n## 当前仓库的 Skills 结构：\n${{ steps.files.outputs.skills_structure }}"
                 }]
               }],
               "generationConfig": {
@@ -65,17 +68,12 @@ jobs:
 
           # 打印结果
           echo "$REVIEW_RESULT" > review_result.txt
-          echo "result=$REVIEW_RESULT" >> $GITHUB_OUTPUT
 
       - name: Post review comment
         if: github.event_name == 'pull_request'
         run: |
-          # 检查是否是 PR 事件
           if [ -n "${{ github.event.pull_request.number }}" ]; then
-            # 移除可能破坏 JSON 的内容
             COMMENT_BODY=$(cat review_result.txt | jq -Rs .)
-
-            # 发送到 PR
             curl -s -X POST \
               "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
