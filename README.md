@@ -13,8 +13,23 @@
 
 ## 使用方式
 
+### 1. 添加自定义插件市场
+
 ```bash
-claude plugin add https://github.com/doublewater777/futures-dev
+claude plugin marketplace add https://github.com/doublewater777/futures-dev
+```
+
+### 2. 安装插件
+
+```bash
+# 安装单个插件
+claude plugin install code-format@futures-dev
+
+# 安装所有插件
+claude plugin install dev-plan@futures-dev
+claude plugin install code-format@futures-dev
+claude plugin install weblog-sdk@futures-dev
+claude plugin install monitor-sdk@futures-dev
 ```
 
 Claude Code 会根据 description 自动触发相应技能。
