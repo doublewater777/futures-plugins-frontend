@@ -1,0 +1,9 @@
+{
+  "name": "monitor-sdk",
+  "version": "1.0.0",
+  "description": "前端监控上报 SDK 使用指南。当用户需要接入前端监控、异常上报时触发。",
+  "author": {
+    "name": "期货团队",
+    "email": ""
+  }
+}

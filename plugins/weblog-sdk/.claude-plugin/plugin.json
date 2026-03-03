@@ -1,0 +1,9 @@
+{
+  "name": "weblog-sdk",
+  "version": "1.0.0",
+  "description": "埋点上报 SDK 使用指南。当用户需要上报埋点时触发。",
+  "author": {
+    "name": "期货团队",
+    "email": ""
+  }
+}

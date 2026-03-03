@@ -1,0 +1,9 @@
+{
+  "name": "code-format",
+  "version": "1.0.0",
+  "description": "前端代码格式化规范。当需要配置代码自动格式化、pre-commit hook 时触发。",
+  "author": {
+    "name": "期货团队",
+    "email": ""
+  }
+}
