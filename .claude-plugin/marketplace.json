@@ -1,0 +1,31 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "futures-dev",
+  "description": "期货团队 Claude Code 技能集，包含开发方案模板、代码格式化、埋点上报、前端监控等",
+  "owner": {
+    "name": "期货团队",
+    "email": ""
+  },
+  "plugins": [
+    {
+      "name": "dev-plan",
+      "description": "前端开发方案文档模板。当用户需要编写前端开发方案、技术方案、设计文档时触发。",
+      "source": "./plugins/dev-plan"
+    },
+    {
+      "name": "code-format",
+      "description": "前端代码格式化规范。当需要配置代码自动格式化、pre-commit hook 时触发。",
+      "source": "./plugins/code-format"
+    },
+    {
+      "name": "weblog-sdk",
+      "description": "埋点上报 SDK 使用指南。当用户需要上报埋点时触发。",
+      "source": "./plugins/weblog-sdk"
+    },
+    {
+      "name": "monitor-sdk",
+      "description": "前端监控上报 SDK 使用指南。当用户需要接入前端监控、异常上报时触发。",
+      "source": "./plugins/monitor-sdk"
+    }
+  ]
+}

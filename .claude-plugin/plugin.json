@@ -1,9 +1,0 @@
-{
-  "name": "futures-dev",
-  "version": "1.0.0",
-  "description": "期货团队 Claude Code 技能集，包含开发方案模板、代码格式化、埋点上报、前端监控等",
-  "author": {
-    "name": "期货团队",
-    "email": ""
-  }
-}
