@@ -1,6 +1,6 @@
 # Futures Plugins Frontend
 
-期货团队 Claude Code 技能集。
+期货团队 Claude Code 插件集。
 
 ## 包含 Plugins
 
