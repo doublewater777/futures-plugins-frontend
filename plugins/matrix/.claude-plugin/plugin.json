@@ -1,0 +1,9 @@
+{
+  "name": "matrix",
+  "version": "1.0.0",
+  "description": "@fu/matrix 工具库Skill集成，用于同花顺/期货应用开发辅助。提供环境检测、数据格式化、存储管理、App桥接等功能。",
+  "author": {
+    "name": "期货团队",
+    "email": ""
+  }
+}
