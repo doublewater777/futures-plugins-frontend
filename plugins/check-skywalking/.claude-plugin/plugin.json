@@ -1,0 +1,9 @@
+{
+  "name": "check-skywalking",
+  "version": "1.0.0",
+  "description": "SkyWalking 相关资源检查工具集。用于检查项目中 SkyWalking、SkyWalking-tool、Weblog 的引入、初始化及主动上报封装的规范性。",
+  "author": {
+    "name": "期货团队",
+    "email": ""
+  }
+}
